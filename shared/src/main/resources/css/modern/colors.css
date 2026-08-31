@@ -1,0 +1,223 @@
+/* Tema modern — dirección estética D: misma semántica que nogrid, ejecución refinada.
+   Forkeado de css/nogrid en 68.0.0-beta10.
+   Mapa de deltas, receta de port e invariantes: tools/theme-check/README.md. */
+
+/* modern: la regla font-face de Archivo NO va acá — esta hoja se carga dentro del shadow
+   root de los componentes Lit, y ahí una regla font-face no registra la familia. Vive en
+   owlcms/src/main/resources/META-INF/resources/styles.css (document-scope). Acá solo
+   se referencia la familia vía --boardFontFamily. */
+
+* {
+    /* modern: tipografía y geometría como tokens (en nogrid están hardcodeadas) */
+    --boardFontFamily: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --cellRadius: 4px;
+    --cellGap: 2px;
+
+    /* modern: logos como tokens, mismos archivos por defecto que nogrid */
+    --eventLogo: url('../../logos/left.png');
+    --federationLogo: url('../../logos/right.png');
+    --currentAthleteLogo: url('../../logos/left.png');
+
+    --pageBackgroundColor: #111111;
+    --pageTextColor: #f2f2f2;
+    --blockBackgroundColor: var(--pageBackgroundColor);
+
+    --videoTextColor: var(--pageTextColor);
+
+    --zIndexRecordNotifications: 10;
+
+    --startNumberBoxColor: #e04545;
+    --breakTimerColor: #6ec8e8;
+    --athleteTimerColor: #ffe066;
+    --athleteAttemptWeightColor: #4dd9e8;
+    --downColor: #4ade80;
+
+    --athleteNameColor: #f2f2f2;
+    --athleteCategoryColor: #f2f2f2;
+    --athleteTeamColor: #f2f2f2;
+    --athleteAttemptColor: #f2f2f2;
+
+    --groupInfoColor: #bdbdbd;
+}
+
+/* modern: los dos tokens del encabezado de video se declaran en `.wrapper`, NO en `*`.
+   DIVERGENCIA DELIBERADA respecto de nogrid (que los declara en `*`), alineada con lo
+   que ya hacen css/public y css/transparent de fábrica.
+   Motivo: owlcms inyecta el override de branding en runtime como `style` inline sobre el
+   div `.wrapper` (StylesDirSelection.overrideColors -> propiedad `colorOverride`,
+   consumida por los templates Lit). Declarados en `*`, la regla matchea cada
+   descendiente de `.wrapper` y le gana al valor heredado del inline, así que el único
+   knob de branding en runtime que tiene owlcms queda inerte. En `.wrapper` el inline
+   gana sobre la regla y el valor se hereda a los descendientes, que es el
+   comportamiento buscado. Es el cimiento que el spec declara para la fase futura, y
+   conviene que los tres temas de la familia se comporten igual. */
+.wrapper {
+    /* video header (igual que la página si no hay transparencia) */
+    --videoHeaderBackgroundColor: var(--pageBackgroundColor);
+    --videoHeaderTextColor: var(--pageTextColor);
+}
+
+.dark {
+    --TableBorders: var(--EmptyBackgroundColor);
+    --TextColor: #f2f2f2;
+    --BackgroundColor: var(--EmptyBackgroundColor);
+
+    --TitleTextColor: var(--TextColor);
+    --TitleBackgroundColor: var(--BackgroundColor);
+
+    --CurrentTextColor: #ffd54a;
+    --CurrentBackgroundColor: var(--EmptyBackgroundColor);
+
+    --NextTextColor: #ff9e3d;
+    --NextBackgroundColor: var(--EmptyBackgroundColor);
+
+    --PreviousTextColor: #7fc8f0;
+    --PreviousBackgroundColor: var(--EmptyBackgroundColor);
+
+    --RequestTextColor: #c0c0c0;
+    --RequestBackgroundColor: var(--EmptyBackgroundColor);
+
+    --StartBackgroundColor: var(--BackgroundColor);
+    --StartTextColor: var(--TextColor);
+
+    --NameBackgroundColor: var(--BackgroundColor);
+    --NameTextColor: var(--TextColor);
+
+    /* modern: columnas secundarias atenuadas usando los tokens que ya existen,
+       en lugar de inventar un --dimTextColor */
+    --CategoryTextColor: #bdbdbd;
+    --CategoryBackgroundColor: var(--BackgroundColor);
+
+    --BirthTextColor: #bdbdbd;
+    --BirthBackgroundColor: var(--BackgroundColor);
+
+    --TeamTextColor: #bdbdbd;
+    --TeamBackgroundColor: var(--BackgroundColor);
+
+    --GoodTextColor: #141414;
+    --GoodBackgroundColor: #f2f2f2;
+
+    --FailTextColor: #ffffff;
+    --FailBackgroundColor: #a31621;
+
+    --RankTextColor: var(--TextColor);
+    --RankBackgroundColor: var(--BackgroundColor);
+
+    --TotalRankTextColor: var(--TextColor);
+    --TotalRankBackgroundColor: var(--BackgroundColor);
+
+    --TotalTextColor: #ffffff;
+    --TotalBackgroundColor: #1e56c8;
+
+    --SpacerBackgroundColor: var(--blockBackgroundColor);
+    --EmptyTextColor: #2f2f2f;
+    --EmptyBackgroundColor: #2f2f2f;
+
+    --RecordBoxBorder: var(--pageTextColor);
+    --RecordBoxBackground: #2f2f2f;
+    --RecordBoxBorderWidth: medium;
+    --RecordBoxText: var(--pageTextColor);
+
+    --RecordCellBorderWidth: thin;
+    --RecordCellBorderColor: var(--pageTextColor);
+
+    --RecordCatText: var(--pageTextColor);
+
+    --RecordValueText: var(--TextColor);
+    --RecordValueBackground: var(--EmptyBackgroundColor);
+
+    --RecordNameBackground: var(--pageBackgroundColor);
+    --RecordNameText: #f2f2f2;
+
+    --RecordLiftTypeBackground: var(--EmptyBackgroundColor);
+    --RecordLiftTypeText: var(--TextColor);
+    --RecordLiftTypeBorder: var(--TextColor);
+
+    --RecordHighlightBackground: #17803d;
+    --RecordHighlightText: #ffffff;
+    --AttemptHighlightText: #ffffff;
+    --AttemptHighlightBackground: #6d28d9;
+}
+
+.light {
+    --TableBorders: #d8d4cc;
+    --TextColor: #1f2933;
+    --BackgroundColor: #ffffff;
+
+    --TitleTextColor: var(--TextColor);
+    --TitleBackgroundColor: var(--BackgroundColor);
+
+    --CurrentTextColor: #7a4b00;
+    --CurrentBackgroundColor: #fdf6e7;
+
+    --NextTextColor: #8a4b00;
+    --NextBackgroundColor: #fdedd3;
+
+    --PreviousTextColor: var(--TextColor);
+    --PreviousBackgroundColor: #dff0fa;
+
+    --RequestTextColor: #6b7480;
+    --RequestBackgroundColor: var(--EmptyBackgroundColor);
+
+    --StartBackgroundColor: var(--BackgroundColor);
+    --StartTextColor: var(--TextColor);
+
+    --NameBackgroundColor: var(--BackgroundColor);
+    --NameTextColor: var(--TextColor);
+
+    --CategoryTextColor: #6b7480;
+    --CategoryBackgroundColor: var(--BackgroundColor);
+
+    --BirthTextColor: #6b7480;
+    --BirthBackgroundColor: var(--BackgroundColor);
+
+    --TeamTextColor: #6b7480;
+    --TeamBackgroundColor: var(--BackgroundColor);
+
+    --GoodTextColor: #fbfaf8;
+    --GoodBackgroundColor: #1f2933;
+
+    --FailTextColor: #ffffff;
+    --FailBackgroundColor: #b42318;
+
+    --RankTextColor: var(--TextColor);
+    --RankBackgroundColor: #f6f3ec;
+
+    --TotalRankTextColor: var(--TextColor);
+    --TotalRankBackgroundColor: var(--RankBackgroundColor);
+
+    --TotalTextColor: #ffffff;
+    --TotalBackgroundColor: #1e56c8;
+
+    --SpacerBackgroundColor: var(--pageBackgroundColor);
+    --EmptyTextColor: var(--EmptyBackgroundColor);
+    --EmptyBackgroundColor: #ffffff;
+
+    /* modern: el recuadro de récord queda oscuro con texto claro también en
+       modo claro, igual que en nogrid — resalta contra la tabla clara y
+       preserva la semántica original del tema (ver .dark, mismo patrón). */
+    --RecordBoxBorder: var(--pageTextColor);
+    --RecordBoxBackground: var(--pageBackgroundColor);
+    --RecordBoxBorderWidth: medium;
+    --RecordBoxText: var(--pageTextColor);
+
+    --RecordCellBorderWidth: thin;
+    --RecordCellBorderColor: var(--pageTextColor);
+
+    --RecordCatText: var(--pageTextColor);
+
+    --RecordValueText: var(--pageTextColor);
+    --RecordValueBackground: var(--RecordBoxBackground);
+
+    --RecordNameBackground: var(--blockBackgroundColor);
+    --RecordNameText: var(--pageTextColor);
+
+    --RecordLiftTypeBackground: var(--RecordBoxBackground);
+    --RecordLiftTypeText: var(--pageTextColor);
+    --RecordLiftTypeBorder: var(--pageTextColor);
+
+    --RecordHighlightBackground: #17803d;
+    --RecordHighlightText: #ffffff;
+    --AttemptHighlightText: #ffffff;
+    --AttemptHighlightBackground: #6d28d9;
+}

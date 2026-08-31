@@ -77,3 +77,6 @@ __pycache__/
 **/.settings/org.eclipse.core.resources.prefs
 scripts/check-translation-diff.sh
 .DS_Store
+
+# Documentos de diseño y planes generados en sesiones de trabajo (locales, sin versionar)
+docs/superpowers/

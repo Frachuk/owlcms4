@@ -1,0 +1,74 @@
+* {
+	box-sizing: border-box;
+	--fontSize: 6vh;
+	--width: 50%;
+}
+
+.wrapper {
+	font: Arial;
+	color: var(--pageTextColor);
+	background-color: transparent;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	flex-grow: 1;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+}
+
+.notification {
+	font-size: var(--fontSize);
+	text-align: center;
+	min-width: 50%;
+	margin-inline: auto;
+	margin-top: 5px; /* margin-block-start could be used if more specific control is needed */
+	border-radius: 20px;
+	border-width: 5px;
+	border-style: solid;
+	padding-inline-start: 1ch;
+	padding-inline-end: 1ch;
+	padding-block-end: 0.2ex;
+	padding-block-start: 0;
+}
+
+.notification.invisibleNotification {
+	color: transparent;
+	background-color: transparent;
+	border: none;
+}
+
+.notification.neutralNotification {
+	font-weight: bold;
+	color: white;
+	background-color: grey;
+	border-color: white;
+}
+
+.notification.deliberationNotification {
+	font-weight: bold;
+	color: white;
+	background-color: #FF9800;
+	border-color: white;
+}
+
+.notification.attemptNotification {
+	font-weight: bold;
+	color: #FAFAFA;
+	background-color: #FF9800;
+	border-color: white;
+}
+
+.notification.successNotification {
+	color: green;
+	background-color: white;
+	font-weight: bold;
+	border-color: green;
+}
+
+.notification.failNotification {
+	color: white;
+	background-color: red;
+	font-weight: bold;
+	border-color: white;
+}

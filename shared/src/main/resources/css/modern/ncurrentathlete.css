@@ -1,0 +1,538 @@
+/* Tema modern — hoja para el "lower third" de atleta actual (NCurrentAthlete).
+   ---------------------------------------------------------------------------
+   NCurrentAthlete.js la carga con stylesheetHref(this, "ncurrentathlete") pero
+   NINGUNA carpeta de temas la provee (ni nogrid, ni public, ni transparent, ni
+   grid), y tampoco existe en el historial de git: el <link> devuelve 500 y el
+   board queda sin estilar. Este archivo es el primero de la familia; por eso no
+   hay regresión posible, solo mejora.
+
+   Es un gráfico de transmisión: una placa que se apoya en la franja inferior del
+   cuadro, no un tablero a pantalla completa. styles.css (document-scope) fuerza
+   html/body a background-color: transparent !important, así que la página es
+   transparente y la placa se compone sobre el video (browser source de OBS).
+   Consecuencia de diseño: acá NO se pinta fondo de página, solo la placa.
+
+   RESTRICCIONES DEL MARKUP Y DE LOS TOKENS (verificadas, no supuestas)
+   -------------------------------------------------------------------
+   1. El elemento raíz del shadow root es <div class="lower-third-container"> y
+      NO lleva clase dark ni light. Por lo tanto los tokens declarados dentro de
+      .dark / .light en colors.css (--TextColor, --GoodBackgroundColor,
+      --EmptyBackgroundColor, --CurrentTextColor, ...) no resuelven acá. Donde
+      hace falta esa semántica se usa var(--Token, <literal>): hoy cae al
+      literal, y si algún día el markup upstream agrega la clase dark el token
+      gana solo, sin tocar esta hoja.
+   2. El selector universal `*` de una hoja cargada en un shadow root NO matchea
+      al host. Los tokens de colors.css viven en `* { ... }`, así que en :host no
+      resuelve ninguna var(): la regla :host de abajo es deliberadamente sin
+      var(), y font-family/colores se aplican en .lower-third-container.
+   3. .rectangle es una grilla de 10 columnas. El template fija a mano
+      grid-column: 2/span 7, 9/span 2, 2/span 3 y 5/span 6, y mete dos
+      .spacer sin columna explícita que caen por auto-placement en la columna 1.
+      Esa columna 1 es el hueco reservado para que el círculo pise la placa sin
+      taparle el texto: de ahí --ltGutter.
+   4. El template pone estilos inline que ganan por especificidad y no se pueden
+      contrarrestar sin !important: .team recibe font-size: 85% cuando el equipo
+      es largo, y .bottom-right trae display:flex + gap:0.3em. Por eso el tamaño
+      base del bloque nombre/equipo se define en .top-left (heredado) y .fullName
+      se fija en términos absolutos: así el equipo queda chico en los dos casos.
+   ---------------------------------------------------------------------------
+   Ver tools/theme-check/README.md para el mapa de deltas del tema. */
+
+* {
+	box-sizing: border-box;
+}
+
+:host {
+	/* Un custom element desconocido es display:inline por defecto. La placa va
+	   position: fixed, así que el host no debe aportar caja, fondo ni tamaño.
+	   OJO: prohibido usar var() acá, ver nota 2 de la cabecera. */
+	display: block;
+}
+
+/* ===========================================================================
+   1. La placa completa: geometría y ubicación en el cuadro
+   ===========================================================================
+   Todas las medidas derivan de --ltPlateHeight, así que para agrandar o achicar
+   el gráfico alcanza con tocar ese valor. El clamp() evita que la placa se
+   vuelva ilegible en ventanas muy bajas o gigante en monitores 4K verticales. */
+
+.lower-third-container {
+	--ltPlateHeight: clamp(96px, 15vh, 210px);
+	--ltCircleSize: calc(var(--ltPlateHeight) * 1.5);
+	--ltRing: calc(var(--ltCircleSize) * 0.06);
+	/* cuánto de la placa pisa el círculo */
+	--ltOverlap: calc(var(--ltCircleSize) * 0.5);
+	/* columna 1 de la grilla: lo que pisa el círculo + aire */
+	--ltGutter: calc(var(--ltOverlap) + var(--ltPlateHeight) * 0.16);
+	/* posición dentro del cuadro; el operador de stream ajusta acá */
+	--ltInsetStart: 3vw;
+	--ltInsetEnd: 20vw;
+	--ltBottom: 8vh;
+	/* modern: --startNumberBoxColor es el único color de acento del bloque `*`
+	   de colors.css. Se reusa como acento gráfico del lower third (anillo del
+	   círculo + subrayado de la placa). Ver "Inquietudes" en el reporte: lo
+	   correcto upstream sería un --accentColor propio. */
+	--ltAccent: var(--startNumberBoxColor, #e04545);
+	/* color de las etiquetas atenuadas (ver .lift). Va acá arriba, como el resto
+	   de las decisiones ajustables, porque es una decisión estética reversible. */
+	--ltLabelColor: var(--groupInfoColor);
+
+	position: fixed;
+	inset-inline: var(--ltInsetStart) var(--ltInsetEnd);
+	bottom: var(--ltBottom);
+	z-index: 1;
+
+	display: flex;
+	align-items: center;
+
+	font-family: var(--boardFontFamily);
+	color: var(--pageTextColor);
+	/* sin background: la página es transparente a propósito (ver cabecera) */
+}
+
+/* ===========================================================================
+   2. El círculo del logo: tres divs superpuestos
+   ===========================================================================
+   El template emite .shadow-circle, .circle y .white-circle vacíos, uno encima
+   del otro. El commit 3c7ce73e1 sacó el <img> del template y dejó a .white-circle
+   como el lugar donde entra el logo por CSS; sin esta hoja el logo no aparece en
+   ninguna parte. */
+
+.circle-container {
+	position: relative;
+	flex: 0 0 auto;
+	inline-size: var(--ltCircleSize);
+	block-size: var(--ltCircleSize);
+	/* por encima de la placa: el círculo la pisa */
+	z-index: 2;
+}
+
+.shadow-circle {
+	/* sombra proyectada del círculo, para despegarlo del video de fondo */
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	background-color: rgba(0, 0, 0, 0.55);
+	transform: translate(2%, 4%) scale(1.03);
+	filter: blur(calc(var(--ltCircleSize) * 0.03));
+	z-index: 0;
+}
+
+.circle {
+	/* disco de acento; lo que se ve es el anillo alrededor del disco blanco */
+	position: absolute;
+	inset: 0;
+	border-radius: 50%;
+	background-color: var(--ltAccent);
+	z-index: 1;
+}
+
+.white-circle {
+	/* el disco blanco recibe el logo por token; el div llega vacío del template.
+	   background-origin: content-box + padding da un margen uniforme para que el
+	   logo quede inscripto y no toque el anillo. 16% mantiene los extremos de un
+	   logo casi cuadrado dentro de la circunferencia. */
+	position: absolute;
+	inset: var(--ltRing);
+	border-radius: 50%;
+	background-color: #ffffff;
+	background-image: var(--currentAthleteLogo);
+	background-repeat: no-repeat;
+	background-position: center center;
+	background-size: contain;
+	background-origin: content-box;
+	padding: 16%;
+	z-index: 2;
+}
+
+/* ===========================================================================
+   3. La placa rectangular: grilla de 10 columnas x 2 filas
+   =========================================================================== */
+
+.rectangle {
+	flex: 1 1 auto;
+	min-inline-size: 0;
+	block-size: var(--ltPlateHeight);
+
+	/* margen negativo: la placa se mete debajo del círculo */
+	margin-inline-start: calc(var(--ltOverlap) * -1);
+	position: relative;
+	z-index: 1;
+
+	display: grid;
+	/* columna 1 = hueco del círculo; 9 columnas iguales para el contenido,
+	   que es lo que asumen los grid-column inline del template */
+	grid-template-columns: var(--ltGutter) repeat(9, 1fr);
+	grid-template-rows: 1.35fr 1fr;
+	align-items: center;
+
+	padding-block: calc(var(--ltPlateHeight) * 0.04);
+	padding-inline-end: calc(var(--ltPlateHeight) * 0.14);
+
+	/* modern: --blockBackgroundColor es el token de "bloque opaco" del tema.
+	   Se deja opaco a propósito: la placa se lee sobre video en movimiento y la
+	   legibilidad manda. Para una placa traslúcida, cambiar esta línea por
+	   background-color: rgba(17, 17, 17, 0.86). */
+	background-color: var(--blockBackgroundColor);
+	border-radius: var(--cellRadius);
+	/* subrayado de acento: ata la placa al anillo del círculo */
+	border-block-end: calc(var(--ltPlateHeight) * 0.025) solid var(--ltAccent);
+	box-shadow: 0 0.4vh 1.6vh rgba(0, 0, 0, 0.5);
+}
+
+.grid-cell {
+	/* min-inline-size: 0 es lo que habilita el ellipsis dentro de una grilla */
+	min-inline-size: 0;
+	overflow: hidden;
+}
+
+.spacer {
+	/* columna 1: hueco reservado para el círculo. Intencionalmente vacía y sin
+	   fondo; existe solo para que el auto-placement de la grilla no meta
+	   contenido debajo del círculo. */
+	background-color: transparent;
+}
+
+.top-row {
+	align-self: center;
+}
+
+.bottom-row {
+	align-self: center;
+}
+
+/* ===========================================================================
+   4. Fila superior izquierda: nombre y equipo
+   ===========================================================================
+   El tamaño base de la celda es el del EQUIPO, no el del nombre: el template le
+   fija font-size: 85% inline al equipo largo (relativo al padre), así que
+   poniendo la base chica el equipo queda chico en los dos modos y el nombre se
+   fija aparte en términos absolutos. Ver nota 4 de la cabecera. */
+
+.top-left {
+	font-size: calc(var(--ltPlateHeight) * 0.155);
+	line-height: 1.15;
+}
+
+/* el div sin clase que el template usa como wrapper: es flex (equipo corto, en
+   la misma línea entre paréntesis) o block (equipo largo, en dos líneas) */
+.top-left > div {
+	min-inline-size: 0;
+	overflow: hidden;
+}
+
+.fullName {
+	font-size: calc(var(--ltPlateHeight) * 0.30);
+	font-weight: 700;
+	line-height: 1.1;
+	letter-spacing: -0.005em;
+	color: var(--athleteNameColor);
+	/* en modo equipo-corto es un flex item: min-inline-size: 0 es obligatorio
+	   para que el ellipsis funcione */
+	min-inline-size: 0;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.team {
+	/* 100% = tamaño base de .top-left. Con equipo largo el template baja a 85%
+	   inline y queda un poco más chico todavía, que es lo deseado. */
+	font-size: 100%;
+	font-weight: 500;
+	color: var(--athleteTeamColor);
+	flex: 0 0 auto;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* ===========================================================================
+   5. Fila superior derecha: reloj o luces (nunca los dos a la vez)
+   ===========================================================================
+   Java pone showAthleteClock/showBreakClock en false cuando muestra decisiones,
+   así que las tres cosas comparten la celda y se turnan vía .hidden. */
+
+.top-right {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	justify-content: center;
+}
+
+.clock {
+	font-size: calc(var(--ltPlateHeight) * 0.34);
+	font-weight: 700;
+	line-height: 1;
+	/* cifras de ancho fijo: el reloj no debe "bailar" al cambiar de dígito */
+	font-variant-numeric: tabular-nums;
+	font-feature-settings: "tnum" 1;
+	text-align: end;
+	white-space: nowrap;
+}
+
+.clock timer-element {
+	/* timer-element es un custom element: display:inline por defecto */
+	display: block;
+}
+
+/* Los dos relojes comparten la clase .clock y solo se distinguen por el id del
+   timer-element de adentro. color y font-size son propiedades heredadas, así que
+   pintando el host del timer se pinta el div que vive en su shadow root
+   (TimerElement no declara static styles: no hay nada que compita). */
+timer-element#timer {
+	color: var(--athleteTimerColor);
+}
+
+timer-element#breakTimer {
+	color: var(--breakTimerColor);
+}
+
+/* ===========================================================================
+   6. Luces de decisión
+   ===========================================================================
+   Ojo con el vocabulario de clases: el template hace class="decision ${d}" y
+   Java manda decisions como booleanos JSON (JsonUtils.set(..., Boolean)), así
+   que en el DOM la clase real es "true" / "false", o nada cuando el árbitro
+   todavía no votó (Lit colapsa null a cadena vacía). El default del propio JS,
+   en cambio, es ["white","white","white"]. Se cubren los dos vocabularios.
+
+   Los colores son literales a propósito: blanco y rojo acá no son colores de
+   tabla sino la señal reglamentaria del árbitro, y así coinciden con
+   decision-lights.css, que es la hoja del <decision-element> que se ve en los
+   demás tableros. */
+
+.decisions {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: calc(var(--ltPlateHeight) * 0.05);
+}
+
+.decision {
+	/* estado base = árbitro sin decisión visible todavía */
+	inline-size: calc(var(--ltPlateHeight) * 0.21);
+	block-size: calc(var(--ltPlateHeight) * 0.30);
+	border-radius: var(--cellRadius);
+	border: 2px dashed rgba(242, 242, 242, 0.35);
+	background-color: rgba(242, 242, 242, 0.06);
+}
+
+.decision.true,
+.decision.white {
+	/* levantamiento válido */
+	background-color: #ffffff;
+	border: 2px solid #ffffff;
+}
+
+.decision.false {
+	/* levantamiento nulo */
+	background-color: #d81e2c;
+	border: 2px solid #d81e2c;
+}
+
+/* ===========================================================================
+   7. Fila inferior izquierda: tipo de levantamiento e intento
+   ===========================================================================
+   .lift llega por innerHTML con la forma "Arranque<br>Intento 1": es una
+   etiqueta, no un dato, así que va en versalitas espaciadas y atenuada. */
+
+.lift {
+	font-size: calc(var(--ltPlateHeight) * 0.125);
+	font-weight: 600;
+	line-height: 1.25;
+	text-transform: uppercase;
+	letter-spacing: 0.07em;
+	/* modern: atenuada a propósito. En una placa de transmisión tiene que haber
+	   un solo foco (el nombre) y un solo dato (el peso actual); las etiquetas
+	   retroceden. --groupInfoColor es el único token atenuado del bloque `*` de
+	   colors.css; --athleteAttemptColor es #f2f2f2, igual que el nombre, y dejaba
+	   cuatro líneas blancas compitiendo entre sí. */
+	color: var(--ltLabelColor);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+/* ===========================================================================
+   8. Fila inferior derecha: indicadores de intento
+   ===========================================================================
+   Seis casilleros (3 de arranque + 3 de envión) separados por .indicator-spacer.
+   Las clases que manda computeIndicators() en NCurrentAthlete.java son
+   exactamente cuatro: empty, current, white (válido) y red (nulo).
+
+   Este board no tiene celda de peso: el peso a levantar ES .indicator.current.
+   Por eso ese casillero es el único con acento y borde. Los colores replican la
+   semántica de results.css (good / fail / current / empty) vía
+   var(--Token, <literal>), porque los tokens viven en .dark y acá no resuelven
+   (nota 1 de la cabecera). */
+
+.bottom-right {
+	/* display:flex y gap vienen inline del template; solo se agrega alineación.
+	   flex-end alinea los casilleros con el borde derecho de la placa, o sea
+	   debajo del reloj y de las luces: la fila de abajo repite la composición de
+	   la de arriba (etiqueta a la izquierda, dato a la derecha). */
+	align-items: center;
+	justify-content: flex-end;
+}
+
+.indicator {
+	flex: 0 0 auto;
+	min-inline-size: calc(var(--ltPlateHeight) * 0.42);
+	min-block-size: calc(var(--ltPlateHeight) * 0.25);
+	padding-inline: calc(var(--ltPlateHeight) * 0.045);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: calc(var(--ltPlateHeight) * 0.155);
+	font-weight: 600;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	border-radius: var(--cellRadius);
+	/* borde transparente para que los estados con borde no muevan el layout */
+	border: 2px solid transparent;
+}
+
+.indicator.empty {
+	/* intento futuro o no declarado; suele venir sin texto */
+	/* modern: el casillero debe leerse como un recuadro DISTINTO de la placa en
+	   cualquier tema (nunca fundido con ella), así que el fallback es una capa
+	   translúcida clara en vez de un literal fijo o de una referencia al color
+	   real de la placa (--blockBackgroundColor): una capa así se autoadapta a
+	   cualquier placa sin clavarse a la paleta de ningún tema — mismo recurso
+	   que ya usa .indicator-spacer más abajo para su divisor. Verificado:
+	   sobre la placa de modern (#111111) compone #292929, 1.30:1 contra la
+	   placa; sobre la de modern-public (#4d4d4d) compone #5f5f5f, 1.32:1 contra
+	   la placa — visible en los dos casos, con la misma relación. */
+	background-color: var(--EmptyBackgroundColor, rgba(255, 255, 255, 0.10));
+	/* modern: con un fondo translúcido ya no hay un color de placa fijo que
+	   igualar, así que el texto se oculta con transparent en vez de intentar
+	   emparejar un fondo que ahora varía por tema (ver pairs.json: el diseño
+	   exige texto y fondo idénticos acá, y transparent lo logra sin depender
+	   de ningún literal). */
+	color: transparent;
+	font-style: italic;
+	font-weight: 400;
+}
+
+.indicator.current {
+	/* el peso que el atleta está por levantar: el dato más importante de la
+	   placa, único casillero con acento */
+	/* modern: mismo motivo que .indicator.empty arriba — capa translúcida
+	   clara en vez de un literal o de --blockBackgroundColor, para que el
+	   casillero se distinga de la placa en cualquier tema. */
+	background-color: var(--EmptyBackgroundColor, rgba(255, 255, 255, 0.10));
+	color: var(--CurrentTextColor, #ffd54a);
+	border-color: var(--CurrentTextColor, #ffd54a);
+	font-weight: 700;
+}
+
+.indicator.white {
+	/* levantamiento válido */
+	background-color: var(--GoodBackgroundColor, #f2f2f2);
+	color: var(--GoodTextColor, #141414);
+	font-weight: 700;
+}
+
+.indicator.red {
+	/* levantamiento nulo: el valor llega entre paréntesis o como "-" */
+	background-color: var(--FailBackgroundColor, #a31621);
+	color: var(--FailTextColor, #ffffff);
+	font-weight: 700;
+}
+
+.indicator-spacer {
+	/* separa la terna de arranque de la de envión */
+	flex: 0 0 auto;
+	inline-size: calc(var(--ltPlateHeight) * 0.16);
+	block-size: calc(var(--ltPlateHeight) * 0.25);
+	margin-inline: calc(var(--ltPlateHeight) * 0.04);
+	/* modern: NO usa --TableBorders. Ese token es var(--EmptyBackgroundColor),
+	   o sea #2f2f2f, que sobre la placa #111 da ~1.5:1 y prácticamente no se ve;
+	   y además esto no es un borde de tabla sino un divisor gráfico. Se deriva del
+	   color de texto con alfa baja, igual que el borde de .decision sin votar, así
+	   que las dos "líneas tenues" de la placa son el mismo material. */
+	border-inline-start: 2px solid rgba(242, 242, 242, 0.22);
+}
+
+/* ===========================================================================
+   9. Modo sin detalles (showDetails = false) — el estado más frecuente al aire
+   ===========================================================================
+   `setDetails(element, false)` aparece en 7 de los 8 modos del switch de
+   NCurrentAthlete.java (líneas 685-733; `true` solo en 713) más en
+   showInterruption (485): pausas, ceremonias, presentación de grupo,
+   interrupciones. O sea que esto NO es un caso de borde, es el estado que el
+   tablero muestra la mayor parte del tiempo.
+
+   El template no lo resuelve solo, así que hay que corregirlo desde acá con
+   :has(). Tres problemas, todos consecuencia de que showDetails apague el
+   contenido pero no la caja que lo sostiene.
+
+   Nota de mantenimiento: los tres predicados miran clases distintas
+   (.indicator.hidden y .lift.hidden) pero las dos vienen del mismo
+   `this.showDetails`, así que siempre conmutan juntas. Se eligió en cada regla
+   el hermano causalmente más cercano al elemento corregido. */
+
+/* (a) El divisor queda huérfano. `<div class="indicator-spacer">` (línea 105 del
+   template) es el ÚNICO hijo de .bottom-right sin binding shown/hidden: sus seis
+   hermanos .indicator (líneas 103 y 108) sí lo tienen. Sin esto, con
+   showDetails=false los indicadores desaparecen y el divisor sobrevive solo,
+   como una raya de 2×28px sin nada que separar. */
+.bottom-right:has(.indicator.hidden) .indicator-spacer {
+	display: none;
+}
+
+/* (b) La fila inferior se queda vacía pero conserva su 1fr, así que el nombre
+   (o el mensaje) queda descentrado en el 57% superior de la placa y abajo no hay
+   nada. Se colapsa la fila y el contenido de arriba usa la placa completa. */
+.rectangle:has(.lift.hidden) {
+	grid-template-rows: 1fr 0fr;
+}
+
+/* (c) .fullName no es solo el nombre del atleta: en estos mismos modos Java
+   escribe ahí el mensaje de pausa o de interrupción (inferMessage /
+   Group_number_done). Con `nowrap` + ellipsis, un texto como "Waiting for the
+   next group to be introduced" se corta con puntos suspensivos. Acá se le
+   permite envolver, y se baja el cuerpo: un mensaje de espera es texto de
+   lectura, no un nombre propio a tamaño de titular, y con 0.22 entran hasta tres
+   líneas en la placa sin desbordar (el `overflow: hidden` de la regla base sigue
+   siendo la red de seguridad si alguna traducción se pasa de largo). */
+.rectangle:has(.lift.hidden) .fullName {
+	white-space: normal;
+	font-size: calc(var(--ltPlateHeight) * 0.22);
+	line-height: 1.18;
+}
+
+/* ===========================================================================
+   10. Utilidades de visibilidad
+   ===========================================================================
+   El template alterna .shown / .hidden en el equipo, el reloj, las luces, el
+   tipo de levantamiento y los indicadores.
+
+   Sin !important a propósito. .hidden empata en especificidad (0-1-0) con las
+   únicas reglas que le podrían competir por `display` —.decisions y .indicator,
+   también de una sola clase— y gana por orden de aparición. Ningún elemento
+   ocultable recibe `display` inline. De ahí la INVARIANTE que hay que respetar
+   al editar este archivo: **.hidden va al final**, después de toda regla de una
+   sola clase que declare `display`. Una regla nueva de ese tipo agregada más
+   abajo lo rompería en silencio.
+
+   .shown no necesita declaraciones: cada regla de arriba ya define su propio
+   `display`, y el estado visible es simplemente la ausencia de .hidden. */
+
+.hidden {
+	display: none;
+}
+
+.notused {
+	/* elementos duplicados que el componente necesita solo porque hereda de la
+	   página de resultados. Ya vienen con display:none inline; esto es red de
+	   seguridad si alguna vez se lo saca del template. */
+	display: none !important;
+}
+
+/* Heredado de los demás boards: Vaadin puede inyectar este div de error. */
+.v-system-error {
+	display: none;
+}

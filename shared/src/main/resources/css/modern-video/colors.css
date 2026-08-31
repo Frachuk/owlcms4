@@ -1,0 +1,333 @@
+/* modern: Tema modern-video — overlay de streaming para OBS, para el mismo rol
+   que css/transparent respecto de css/nogrid. Forkeado de css/transparent en
+   68.0.0-beta10: el CUERPO de este colors.css es una copia byte-idéntica del de
+   modern-public/colors.css (que ya traduce a la paleta modern los tokens en que
+   public difiere de nogrid), y TODA la diferencia vive en los bloques de overrides
+   del final. Hoy son dos:
+     1. --pageBackgroundColor: transparent, para que OBS componga el overlay sobre el
+        video. Es la única diferencia real entre transparent/colors.css y
+        public/colors.css de fábrica. Las celdas quedan OPACAS: mismo criterio que el
+        tema de fábrica, por legibilidad sobre video en movimiento.
+     2. --RecordNameBackground en .dark, que corta la cadena hacia
+        --blockBackgroundColor (opaco) en vez de --pageBackgroundColor (transparent
+        acá), porque si no el nombre del récord queda ilegible sobre el video.
+   Invariante: NUNCA editar un valor dentro del cuerpo -- se apila un bloque al final,
+   que gana por orden en la cascada. Editar el cuerpo rompe la identidad byte a byte
+   con modern-public y deja esta cabecera mintiendo.
+   Mapa de deltas, receta de port e invariantes: tools/theme-check/README.md. */
+
+/* modern: la regla font-face de Archivo NO va acá — esta hoja se carga dentro del shadow
+   root de los componentes Lit, y ahí una regla font-face no registra la familia. Vive en
+   owlcms/src/main/resources/META-INF/resources/styles.css (document-scope). Acá solo
+   se referencia la familia vía --boardFontFamily. */
+
+* {
+    /* modern: tipografía y geometría como tokens (en nogrid están hardcodeadas) */
+    --boardFontFamily: 'Archivo', 'Helvetica Neue', Arial, sans-serif;
+    --cellRadius: 4px;
+    --cellGap: 2px;
+
+    /* modern: logos como tokens, mismos archivos por defecto que nogrid */
+    --eventLogo: url('../../logos/left.png');
+    --federationLogo: url('../../logos/right.png');
+    --currentAthleteLogo: url('../../logos/left.png');
+
+    --pageBackgroundColor: #111111;
+    --pageTextColor: #f2f2f2;
+    --blockBackgroundColor: var(--pageBackgroundColor);
+
+    --videoTextColor: var(--pageTextColor);
+
+    --zIndexRecordNotifications: 10;
+
+    --startNumberBoxColor: #e04545;
+    --breakTimerColor: #6ec8e8;
+    --athleteTimerColor: #ffe066;
+    --athleteAttemptWeightColor: #4dd9e8;
+    --downColor: #4ade80;
+
+    --athleteNameColor: #f2f2f2;
+    --athleteCategoryColor: #f2f2f2;
+    --athleteTeamColor: #f2f2f2;
+    --athleteAttemptColor: #f2f2f2;
+
+    --groupInfoColor: #bdbdbd;
+}
+
+/* modern: los dos tokens del encabezado de video se declaran en `.wrapper`, NO en `*`.
+   DIVERGENCIA DELIBERADA respecto de nogrid (que los declara en `*`), alineada con lo
+   que ya hacen css/public y css/transparent de fábrica.
+   Motivo: owlcms inyecta el override de branding en runtime como `style` inline sobre el
+   div `.wrapper` (StylesDirSelection.overrideColors -> propiedad `colorOverride`,
+   consumida por los templates Lit). Declarados en `*`, la regla matchea cada
+   descendiente de `.wrapper` y le gana al valor heredado del inline, así que el único
+   knob de branding en runtime que tiene owlcms queda inerte. En `.wrapper` el inline
+   gana sobre la regla y el valor se hereda a los descendientes, que es el
+   comportamiento buscado. Es el cimiento que el spec declara para la fase futura, y
+   conviene que los tres temas de la familia se comporten igual. */
+.wrapper {
+    /* video header (igual que la página si no hay transparencia) */
+    --videoHeaderBackgroundColor: var(--pageBackgroundColor);
+    --videoHeaderTextColor: var(--pageTextColor);
+}
+
+.dark {
+    --TableBorders: var(--EmptyBackgroundColor);
+    --TextColor: #f2f2f2;
+    --BackgroundColor: var(--EmptyBackgroundColor);
+
+    --TitleTextColor: var(--TextColor);
+    --TitleBackgroundColor: var(--BackgroundColor);
+
+    --CurrentTextColor: #ffd54a;
+    --CurrentBackgroundColor: var(--EmptyBackgroundColor);
+
+    --NextTextColor: #ff9e3d;
+    --NextBackgroundColor: var(--EmptyBackgroundColor);
+
+    --PreviousTextColor: #7fc8f0;
+    --PreviousBackgroundColor: var(--EmptyBackgroundColor);
+
+    --RequestTextColor: #c0c0c0;
+    --RequestBackgroundColor: var(--EmptyBackgroundColor);
+
+    --StartBackgroundColor: var(--BackgroundColor);
+    --StartTextColor: var(--TextColor);
+
+    --NameBackgroundColor: var(--BackgroundColor);
+    --NameTextColor: var(--TextColor);
+
+    /* modern: columnas secundarias atenuadas usando los tokens que ya existen,
+       en lugar de inventar un --dimTextColor */
+    --CategoryTextColor: #bdbdbd;
+    --CategoryBackgroundColor: var(--BackgroundColor);
+
+    --BirthTextColor: #bdbdbd;
+    --BirthBackgroundColor: var(--BackgroundColor);
+
+    --TeamTextColor: #bdbdbd;
+    --TeamBackgroundColor: var(--BackgroundColor);
+
+    --GoodTextColor: #141414;
+    --GoodBackgroundColor: #f2f2f2;
+
+    --FailTextColor: #ffffff;
+    --FailBackgroundColor: #a31621;
+
+    --RankTextColor: var(--TextColor);
+    --RankBackgroundColor: var(--BackgroundColor);
+
+    --TotalRankTextColor: var(--TextColor);
+    --TotalRankBackgroundColor: var(--BackgroundColor);
+
+    --TotalTextColor: #ffffff;
+    --TotalBackgroundColor: #1e56c8;
+
+    --SpacerBackgroundColor: var(--blockBackgroundColor);
+    --EmptyTextColor: #2f2f2f;
+    --EmptyBackgroundColor: #2f2f2f;
+
+    --RecordBoxBorder: var(--pageTextColor);
+    --RecordBoxBackground: #2f2f2f;
+    --RecordBoxBorderWidth: medium;
+    --RecordBoxText: var(--pageTextColor);
+
+    --RecordCellBorderWidth: thin;
+    --RecordCellBorderColor: var(--pageTextColor);
+
+    --RecordCatText: var(--pageTextColor);
+
+    --RecordValueText: var(--TextColor);
+    --RecordValueBackground: var(--EmptyBackgroundColor);
+
+    --RecordNameBackground: var(--pageBackgroundColor);
+    --RecordNameText: #f2f2f2;
+
+    --RecordLiftTypeBackground: var(--EmptyBackgroundColor);
+    --RecordLiftTypeText: var(--TextColor);
+    --RecordLiftTypeBorder: var(--TextColor);
+
+    --RecordHighlightBackground: #17803d;
+    --RecordHighlightText: #ffffff;
+    --AttemptHighlightText: #ffffff;
+    --AttemptHighlightBackground: #6d28d9;
+}
+
+.light {
+    --TableBorders: #d8d4cc;
+    --TextColor: #1f2933;
+    --BackgroundColor: #ffffff;
+
+    --TitleTextColor: var(--TextColor);
+    --TitleBackgroundColor: var(--BackgroundColor);
+
+    --CurrentTextColor: #7a4b00;
+    --CurrentBackgroundColor: #fdf6e7;
+
+    --NextTextColor: #8a4b00;
+    --NextBackgroundColor: #fdedd3;
+
+    --PreviousTextColor: var(--TextColor);
+    --PreviousBackgroundColor: #dff0fa;
+
+    --RequestTextColor: #6b7480;
+    --RequestBackgroundColor: var(--EmptyBackgroundColor);
+
+    --StartBackgroundColor: var(--BackgroundColor);
+    --StartTextColor: var(--TextColor);
+
+    --NameBackgroundColor: var(--BackgroundColor);
+    --NameTextColor: var(--TextColor);
+
+    --CategoryTextColor: #6b7480;
+    --CategoryBackgroundColor: var(--BackgroundColor);
+
+    --BirthTextColor: #6b7480;
+    --BirthBackgroundColor: var(--BackgroundColor);
+
+    --TeamTextColor: #6b7480;
+    --TeamBackgroundColor: var(--BackgroundColor);
+
+    --GoodTextColor: #fbfaf8;
+    --GoodBackgroundColor: #1f2933;
+
+    --FailTextColor: #ffffff;
+    --FailBackgroundColor: #b42318;
+
+    --RankTextColor: var(--TextColor);
+    --RankBackgroundColor: #f6f3ec;
+
+    --TotalRankTextColor: var(--TextColor);
+    --TotalRankBackgroundColor: var(--RankBackgroundColor);
+
+    --TotalTextColor: #ffffff;
+    --TotalBackgroundColor: #1e56c8;
+
+    --SpacerBackgroundColor: var(--pageBackgroundColor);
+    --EmptyTextColor: var(--EmptyBackgroundColor);
+    --EmptyBackgroundColor: #ffffff;
+
+    /* modern: el recuadro de récord queda oscuro con texto claro también en
+       modo claro, igual que en nogrid — resalta contra la tabla clara y
+       preserva la semántica original del tema (ver .dark, mismo patrón). */
+    --RecordBoxBorder: var(--pageTextColor);
+    --RecordBoxBackground: var(--pageBackgroundColor);
+    --RecordBoxBorderWidth: medium;
+    --RecordBoxText: var(--pageTextColor);
+
+    --RecordCellBorderWidth: thin;
+    --RecordCellBorderColor: var(--pageTextColor);
+
+    --RecordCatText: var(--pageTextColor);
+
+    --RecordValueText: var(--pageTextColor);
+    --RecordValueBackground: var(--RecordBoxBackground);
+
+    --RecordNameBackground: var(--blockBackgroundColor);
+    --RecordNameText: var(--pageTextColor);
+
+    --RecordLiftTypeBackground: var(--RecordBoxBackground);
+    --RecordLiftTypeText: var(--pageTextColor);
+    --RecordLiftTypeBorder: var(--pageTextColor);
+
+    --RecordHighlightBackground: #17803d;
+    --RecordHighlightText: #ffffff;
+    --AttemptHighlightText: #ffffff;
+    --AttemptHighlightBackground: #6d28d9;
+}
+
+/* modern: overrides propios de modern-public sobre modern/colors.css. public se
+   diferencia de nogrid en exactamente 7 tokens; acá se traduce cada uno a la
+   paleta modern. Los literales elegidos para este contexto en public (verde de
+   peso, azul de encabezado de video con su texto blanco, gris de bloque) se
+   conservan verbatim; el resto pasa al equivalente derivado de la paleta modern.
+   NO se copia --RecordNameText: var(--TextColor) de public: en el public de
+   fábrica esa combinación (texto negro sobre --blockBackgroundColor #4d4d4d en
+   modo claro) da 2.48:1, uno de los 3 fallos de contraste preexistentes del
+   tema de fábrica (ver tools/theme-check/contrast.py sobre public/colors.css).
+   Se deja el RecordNameText de modern (recuadro oscuro con texto claro en
+   ambos modos, ya con contraste alto) sin cambios. */
+* {
+    /* modern: literal de public, buena legibilidad para el peso solicitado */
+    --athleteAttemptWeightColor: #a1e94e;
+
+    /* modern: gris de bloque propio de public (nogrid usaba var(--pageBackgroundColor)) */
+    --blockBackgroundColor: #4d4d4d;
+}
+
+/* modern: azul de encabezado de video propio de public, con texto blanco
+   (nogrid usaba var(--pageBackgroundColor)/var(--pageTextColor)). Va en `.wrapper`,
+   NO en `*`, por la misma razón que el bloque `.wrapper` de arriba: en `*` la regla
+   matchearía a cada descendiente y le ganaría al `style` inline con que owlcms inyecta
+   el override de branding en runtime. Misma especificidad que el `.wrapper` de arriba,
+   así que gana por orden en la cascada. */
+.wrapper {
+    --videoHeaderBackgroundColor: #1048af;
+    --videoHeaderTextColor: white;
+}
+
+.light {
+    /* modern: RecordBoxBackground de public es "grey" (#808080), pero acá se
+       oscurece a #6e6e6e en vez de copiarlo verbatim. El texto que va encima
+       (--RecordBoxText/--RecordValueText/--RecordLiftTypeText, todos
+       var(--pageTextColor) = #f2f2f2) es CLARO, porque en esta familia el
+       recuadro de récord queda oscuro con texto claro en ambos modos (mismo
+       patrón que --RecordBoxBackground de modern en .dark). Con texto claro,
+       #808080 da 3.53:1; #6e6e6e sube a 4.55:1, cruzando el umbral AA de 4.5
+       para texto normal en vez de rasparlo apenas por encima del mínimo 3.0 de
+       este par. Sigue siendo más claro que --blockBackgroundColor (#4d4d4d),
+       así que el recuadro conserva su distinción visual contra la placa;
+       no se usa #4d4d4d porque se fundiría con el bloque. Verificado con
+       tools/theme-check/contrast.py --mode both. */
+    --RecordBoxBackground: #6e6e6e;
+
+    /* modern: SpacerBackgroundColor de public sigue a blockBackgroundColor
+       (nogrid lo hacía seguir a pageBackgroundColor) */
+    --SpacerBackgroundColor: var(--blockBackgroundColor);
+}
+
+/* modern: ejemplo documentado de personalización por plataforma, en el mismo
+   espíritu que el bloque .wrapper.JQ de public/colors.css de fábrica — muestra
+   cómo una federación (acá "JQ") puede sobreescribir el encabezado de video
+   para su propia plataforma sin tocar el resto del tema. NO es el default del
+   tema (ese es #1048af, en el bloque `.wrapper` de arriba): usa un color
+   deliberadamente distinto (#7a1128, un granate) para que el ejemplo se
+   distinga del default en vez de pisarlo con el mismo valor. Contraste
+   verificado a mano (blanco sobre #7a1128 da 10.83:1, por encima del mínimo
+   3.0 del par "encabezado video" de tools/theme-check/pairs.json).
+   VERIFICADO EN VIVO (getComputedStyle sobre el div .video del board): con la
+   clase JQ en el .wrapper, el descendiente resuelve #7a1128 y pinta
+   rgb(122,17,40); sin ella, #1048af. Y el `style` inline que inyecta owlcms
+   sigue ganando sobre este bloque, que es la precedencia correcta.
+   DEPENDE de que --videoHeaderBackgroundColor/--videoHeaderTextColor se
+   declaren en `.wrapper` y no en `*`: mientras estuvieron en `*`, este bloque
+   era INERTE (la regla `*` matcheaba a cada descendiente y le ganaba al valor
+   heredado). Si algún día se mueven de vuelta a `*`, este ejemplo deja de
+   funcionar sin que nada avise. */
+.wrapper.JQ {
+    --videoHeaderBackgroundColor: #7a1128;
+    --videoHeaderTextColor: white;
+}
+
+/* modern: modern-video: la página es transparente para que OBS componga el overlay
+   sobre el video. Las CELDAS quedan OPACAS: es lo que hace el tema de
+   fábrica y existe por legibilidad sobre imagen en movimiento. */
+* {
+    --pageBackgroundColor: transparent;
+}
+
+/* modern: --RecordNameBackground sigue a blockBackgroundColor (opaco), no a
+   pageBackgroundColor (transparent en este tema) — mismo corte de cadena que hace
+   transparent/colors.css de fábrica en ambos modos. Si sigue a pageBackgroundColor,
+   .recordName/.recordTitle/.recordLiftTypeSpacer (results.css) quedan sin ningún
+   ancestro opaco entre .recordTitleBlock y .wrapper (Results.js: .recordTitleBlock es
+   hermano de .recordBox, ninguno de los dos ni .recordRow pintan fondo), y el nombre
+   del récord se vuelve ilegible sobre video.
+   Va ACÁ, apilado en el bloque de overrides del final, y no editado dentro del cuerpo:
+   la invariante de capas del tema es que el cuerpo de modern-video sea byte-idéntico al
+   de modern-public y que TODA la diferencia viva en este bloque. Misma especificidad que
+   el `.dark` del cuerpo, así que gana por orden en la cascada. En .light el valor del
+   cuerpo (var(--RecordBoxBackground)) ya es opaco y no hace falta tocarlo. */
+.dark {
+    --RecordNameBackground: var(--blockBackgroundColor);
+}

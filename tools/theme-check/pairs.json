@@ -1,0 +1,53 @@
+{
+  "pairs": [
+    {"fg": "--pageTextColor",     "bg": "--pageBackgroundColor",  "min": 4.5, "label": "texto de página"},
+    {"fg": "--TextColor",         "bg": "--EmptyBackgroundColor", "min": 3.0, "label": "celda normal"},
+    {"fg": "--GoodTextColor",     "bg": "--GoodBackgroundColor",  "min": 3.0, "label": "intento válido"},
+    {"fg": "--FailTextColor",     "bg": "--FailBackgroundColor",  "min": 3.0, "label": "intento nulo"},
+    {"fg": "--TotalTextColor",    "bg": "--TotalBackgroundColor", "min": 3.0, "label": "total"},
+    {"fg": "--CurrentTextColor",  "bg": "--EmptyBackgroundColor", "min": 3.0, "label": "atleta actual"},
+    {"fg": "--NextTextColor",     "bg": "--EmptyBackgroundColor", "min": 3.0, "label": "siguiente"},
+    {"fg": "--PreviousTextColor", "bg": "--EmptyBackgroundColor", "min": 3.0, "label": "anterior"},
+    {"fg": "--RequestTextColor",  "bg": "--EmptyBackgroundColor", "min": 3.0, "label": "peso pedido"},
+    {"fg": "--CategoryTextColor", "bg": "--EmptyBackgroundColor", "min": 4.5, "label": "categoría"},
+    {"fg": "--BirthTextColor",    "bg": "--EmptyBackgroundColor", "min": 4.5, "label": "año nac."},
+    {"fg": "--TeamTextColor",     "bg": "--EmptyBackgroundColor", "min": 4.5, "label": "equipo"},
+    {"fg": "--RankTextColor",     "bg": "--RankBackgroundColor",  "min": 4.5, "label": "posición"},
+
+    {"fg": "--AttemptHighlightText",  "bg": "--AttemptHighlightBackground", "min": 3.0, "label": "intento destacado"},
+    {"fg": "--BirthTextColor",        "bg": "--BirthBackgroundColor",       "min": 3.0, "label": "año nac. (fondo columna)"},
+    {"fg": "--CategoryTextColor",     "bg": "--CategoryBackgroundColor",    "min": 3.0, "label": "categoría (fondo columna)"},
+    {"fg": "--CurrentTextColor",      "bg": "--CurrentBackgroundColor",     "min": 3.0, "label": "atleta actual (fondo dedicado)"},
+    {"fg": "--NameTextColor",         "bg": "--NameBackgroundColor",        "min": 3.0, "label": "nombre"},
+    {"fg": "--NextTextColor",         "bg": "--NextBackgroundColor",        "min": 3.0, "label": "siguiente (fondo dedicado)"},
+    {"fg": "--PreviousTextColor",     "bg": "--PreviousBackgroundColor",    "min": 3.0, "label": "anterior (fondo dedicado)"},
+    {"fg": "--RecordBoxText",         "bg": "--RecordBoxBackground",        "min": 3.0, "label": "recuadro récord"},
+    {"fg": "--RecordHighlightText",   "bg": "--RecordHighlightBackground",  "min": 3.0, "label": "récord resaltado"},
+    {"fg": "--RecordLiftTypeText",    "bg": "--RecordLiftTypeBackground",   "min": 3.0, "label": "tipo de levantamiento (récord)"},
+    {"fg": "--RecordLiftTypeText",    "bg": "--RecordNameBackground",       "min": 3.0, "label": "tipo de levantamiento sobre nombre (récord)"},
+    {"fg": "--RecordNameText",        "bg": "--RecordNameBackground",       "min": 3.0, "label": "nombre del récord"},
+    {"fg": "--RecordValueText",       "bg": "--AttemptHighlightBackground", "min": 3.0, "label": "valor récord sobre intento destacado"},
+    {"fg": "--RecordValueText",       "bg": "--RecordValueBackground",      "min": 3.0, "label": "valor récord"},
+    {"fg": "--RequestTextColor",      "bg": "--RequestBackgroundColor",     "min": 3.0, "label": "peso pedido (fondo dedicado)"},
+    {"fg": "--StartTextColor",        "bg": "--StartBackgroundColor",       "min": 3.0, "label": "número de partida"},
+    {"fg": "--TeamTextColor",         "bg": "--TeamBackgroundColor",        "min": 3.0, "label": "equipo (fondo columna)"},
+    {"fg": "--TextColor",             "bg": "--BackgroundColor",            "min": 3.0, "label": "texto de tabla"},
+    {"fg": "--TextColor",             "bg": "--RequestBackgroundColor",     "min": 3.0, "label": "texto sobre peso pedido"},
+    {"fg": "--TotalRankTextColor",    "bg": "--TotalRankBackgroundColor",   "min": 3.0, "label": "posición total"},
+    {"fg": "--groupInfoColor",        "bg": "--videoHeaderBackgroundColor", "min": 3.0, "label": "info de sesión (video)"},
+    {"fg": "--lightGoodTextColor",    "bg": "--lightGoodBackgroundColor",   "min": 3.0, "label": "intento válido (sinclair claro)"},
+    {"fg": "--videoHeaderTextColor",  "bg": "--videoHeaderBackgroundColor", "min": 3.0, "label": "encabezado video"}
+  ],
+  "excluded": [
+    {
+      "fg": "--EmptyTextColor",
+      "bg": "--EmptyBackgroundColor",
+      "reason": "Existe para ocultar el texto de las celdas vacías: el diseño exige texto y fondo idénticos (ratio 1.00), tanto en nogrid como en modern, en ambos modos. No es un fallo de contraste, es la función del token."
+    },
+    {
+      "fg": "--pageTextColor",
+      "bg": "--BackgroundColor",
+      "reason": "En .light da 1.12 en modern y 1.00 en nogrid — ambos invisibles por diseño de fábrica. --pageTextColor está pensado para leerse sobre --pageBackgroundColor (ya cubierto por el par 'texto de página'), no sobre --BackgroundColor de la tabla; este par nunca se usa como texto legible en los layouts. Mismo comportamiento heredado en ambos temas."
+    }
+  ]
+}
