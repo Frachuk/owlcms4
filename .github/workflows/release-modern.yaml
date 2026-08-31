@@ -181,11 +181,29 @@ jobs:
       #     servidor no se sirve.
       #   - los .woff2 en el classpath del jar: el assembly NO los copia a `local/fonts/`,
       #     pero el resolvedor de `/local/*` cae al classpath, asi que se sirven igual.
+      - name: Rename the zip
+        run: |
+          set -euo pipefail
+          mv owlcms/target/owlcms*.zip "owlcms/target/owlcms_${{ env.REVISION }}.zip"
+          ls -l owlcms/target/owlcms_${{ env.REVISION }}.zip
+
+      # Red de seguridad: si el paso de release falla (permisos, tag repetido), el zip
+      # queda igual descargable desde la pagina del run por 90 dias.
+      - name: Upload the zip as a run artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: owlcms_${{ env.REVISION }}
+          path: owlcms/target/owlcms_${{ env.REVISION }}.zip
+          if-no-files-found: error
+
       - name: Verify the modern theme is in the artifact
         run: |
           set -euo pipefail
-          ZIP=$(ls owlcms/target/owlcms*.zip)
+          # Ruta exacta, no glob: este paso ahora corre DESPUES del rename, para que el zip
+          # quede subido como artifact del run aunque la verificacion falle.
+          ZIP="owlcms/target/owlcms_${{ env.REVISION }}.zip"
           echo "zip: $ZIP"
+          test -s "$ZIP"
 
           fallo=0
 
@@ -200,10 +218,34 @@ jobs:
 
           unzip -p "$ZIP" owlcms.jar > "$RUNNER_TEMP/owlcms.jar"
 
-          n=$(unzip -p "$RUNNER_TEMP/owlcms.jar" META-INF/resources/styles.css | grep -c "Archivo" || true)
-          echo "  @font-face de Archivo en styles.css: $n coincidencias"
-          if [ "$n" -lt 2 ]; then
-            echo "ERROR: styles.css no trae los @font-face de Archivo. La tipografia va a caer a Helvetica." >&2
+          # Ojo al portar: el build de produccion de Vaadin MINIFICA styles.css y lo deja
+          # en una sola linea. Contar lineas con `grep -c` da 1 aunque el contenido este
+          # completo (en el repo, sin minificar, da 4). Hay que chequear contenido, no
+          # lineas: las dos URLs de las fuentes y la presencia de @font-face.
+          CSS=$(unzip -p "$RUNNER_TEMP/owlcms.jar" META-INF/resources/styles.css)
+
+          if grep -q '@font-face' <<< "$CSS"; then
+            echo "  @font-face en styles.css: ok"
+          else
+            echo "ERROR: styles.css no tiene ningun @font-face." >&2
+            fallo=1
+          fi
+
+          for u in Archivo-Variable-latin.woff2 Archivo-Variable-latin-ext.woff2; do
+            if grep -q "$u" <<< "$CSS"; then
+              echo "  styles.css referencia $u: ok"
+            else
+              echo "ERROR: styles.css no referencia $u. La tipografia va a caer a Helvetica." >&2
+              fallo=1
+            fi
+          done
+
+          n=$(grep -o 'Archivo' <<< "$CSS" | wc -l | tr -d ' ' || true)
+          echo "  ocurrencias de 'Archivo' en styles.css: $n (se esperan 4 o mas)"
+          if [ "${n:-0}" -lt 4 ]; then
+            echo "ERROR: styles.css tiene $n ocurrencias de 'Archivo', se esperaban 4." >&2
+            echo "--- lo que hay, recortado: ---" >&2
+            grep -o '@font-face[^}]*}' <<< "$CSS" | head -4 >&2 || true
             fallo=1
           fi
 
@@ -221,21 +263,6 @@ jobs:
             exit 1
           fi
           echo "Artefacto completo."
-
-      - name: Rename the zip
-        run: |
-          set -euo pipefail
-          mv owlcms/target/owlcms*.zip "owlcms/target/owlcms_${{ env.REVISION }}.zip"
-          ls -l owlcms/target/owlcms_${{ env.REVISION }}.zip
-
-      # Red de seguridad: si el paso de release falla (permisos, tag repetido), el zip
-      # queda igual descargable desde la pagina del run por 90 dias.
-      - name: Upload the zip as a run artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: owlcms_${{ env.REVISION }}
-          path: owlcms/target/owlcms_${{ env.REVISION }}.zip
-          if-no-files-found: error
 
       - name: Create GitHub Release
         env:
