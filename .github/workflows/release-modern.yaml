@@ -49,6 +49,35 @@ jobs:
           fetch-depth: 1
           persist-credentials: false
 
+      # Guarda temprana: el workflow tiene que estar en la rama default (dev68) para que
+      # GitHub muestre el boton "Run workflow", pero la definicion se toma de la rama que
+      # se elige al correrlo. Es facil dispararlo sobre dev68 por descuido, y ahi el tema
+      # no existe. Sin este chequeo eso se descubre 20 minutos despues, al final del build.
+      - name: Check that this branch has the modern theme
+        run: |
+          set -euo pipefail
+          falta=0
+          for tema in modern modern-public modern-video; do
+            d="shared/src/main/resources/css/$tema"
+            if [ -d "$d" ]; then
+              echo "  $d: $(ls "$d" | wc -l | tr -d ' ') archivos"
+            else
+              echo "ERROR: falta $d" >&2
+              falta=1
+            fi
+          done
+          if ! grep -q 'Archivo' owlcms/src/main/resources/META-INF/resources/styles.css 2>/dev/null; then
+            echo "ERROR: styles.css no trae los @font-face de Archivo." >&2
+            falta=1
+          fi
+          if [ "$falta" -ne 0 ]; then
+            echo "" >&2
+            echo "La rama '$GITHUB_REF_NAME' no tiene el tema modern." >&2
+            echo "Volve a correr el workflow eligiendo la rama 'modern-theme'." >&2
+            exit 1
+          fi
+          echo "Rama '$GITHUB_REF_NAME': el tema esta presente."
+
       - name: Set up Java 25
         uses: actions/setup-java@v5
         with:
@@ -105,6 +134,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-${{ hashFiles('pom.xml', 'shared/pom.xml', 'owlcms/pom.xml') }}
             ${{ runner.os }}-maven-
+
+      # El pom declara `owlcms-maven-repo` (https://maven.jflamy.dev/releases) ANTES que
+      # central. Ese repo no tiene `vaadin-dev-server`: responde 404 con un cuerpo HTML.
+      # Maven lo registro como "Downloaded ... (0 B at 0 B/s)", dejo un jar de 0 bytes en
+      # ~/.m2 y no cayo a central, que si lo tiene (229 kB). Despues javac no pudo leer el
+      # jar y reporto "cannot access app.owlcms.*" en 40 archivos, tapando la causa real.
+      #
+      # Sembrarlo desde central antes del build hace que Maven lo resuelva del repo local
+      # y no consulte los remotos. Si algun dia el upstream arregla su repo, este paso
+      # sigue funcionando (central tiene el artefacto igual), asi que se puede dejar.
+      #
+      # El barrido de jars vacios es la red general: cualquier otro artefacto que llegue
+      # en 0 bytes por el mismo camino se borra antes de compilar.
+      - name: Work around empty artifacts from owlcms-maven-repo
+        run: |
+          set -euo pipefail
+          find ~/.m2/repository -name '*.jar' -size 0 -print -delete 2>/dev/null || true
+          find ~/.m2/repository -name '*.lastUpdated' -delete 2>/dev/null || true
+
+          ART_JAR="$HOME/.m2/repository/com/vaadin/vaadin-dev-server/25.2.4/vaadin-dev-server-25.2.4.jar"
+          mvn -B dependency:get \
+            -Dartifact=com.vaadin:vaadin-dev-server:25.2.4 \
+            -DremoteRepositories='central::::https://repo.maven.apache.org/maven2'
+
+          if [ ! -s "$ART_JAR" ]; then
+            echo "ERROR: vaadin-dev-server sigue vacio o ausente en $ART_JAR" >&2
+            echo "Revisar si cambio la version del artefacto en el pom." >&2
+            exit 1
+          fi
+          echo "vaadin-dev-server sembrado desde central: $(wc -c < "$ART_JAR") bytes"
 
       - name: Build
         run: mvn -B clean install -Pproduction -am -pl owlcms -Drevision=${{ env.REVISION }} -Dmaven.test.skip
