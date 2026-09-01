@@ -132,15 +132,91 @@ jobs:
             -Dartifact=com.vaadin:vaadin-dev-server:25.2.4 \
             -DremoteRepositories='central::::https://repo.maven.apache.org/maven2'
 
-          if [ ! -s "$ART_JAR" ]; then
-            echo "ERROR: vaadin-dev-server sigue vacio o ausente en $ART_JAR" >&2
-            echo "Revisar si cambio la version del artefacto en el pom." >&2
-            exit 1
+          # No es fatal: es solo un atajo para el artefacto que ya sabemos que viene
+          # roto. Si falla, el paso de Build lo detecta y lo repara igual.
+          if [ -s "$ART_JAR" ]; then
+            echo "vaadin-dev-server sembrado desde central: $(wc -c < "$ART_JAR") bytes"
+          else
+            echo "AVISO: no se pudo sembrar vaadin-dev-server. El paso de Build lo va a reparar."
           fi
-          echo "vaadin-dev-server sembrado desde central: $(wc -c < "$ART_JAR") bytes"
 
+      # Build con reparacion y reintento.
+      #
+      # El repo de owlcms sirve artefactos rotos (ver el paso anterior) y NO es un
+      # artefacto fijo: la primera vez fue `vaadin-dev-server`, la segunda
+      # `jakarta.annotation-api`. Cualquier dependencia que Maven le pida a ese repo y
+      # que el repo no tenga puede volver en 0 bytes, y Maven la acepta.
+      #
+      # Con cache tibio casi no se nota, porque Maven no vuelve a pedir lo que ya
+      # tiene. Con cache frio si: y el cache de Actions esta scopeado por rama, asi que
+      # el primer build de una rama nueva SIEMPRE arranca en frio aunque otra rama
+      # tenga uno guardado. Por eso funciono en `modern-theme` y fallo en `main`.
+      #
+      # La estrategia: intentar, y si falla, buscar los jars invalidos del repo local,
+      # recuperarlos de central por coordenadas y reintentar. Si el build falla sin
+      # jars invalidos, el problema es otro y se corta enseguida en vez de gastar
+      # reintentos.
       - name: Build
-        run: mvn -B clean install -Pproduction -am -pl owlcms -Drevision=${{ env.BASE_REVISION }} -Dmaven.test.skip
+        run: |
+          set -euo pipefail
+          REPO_LOCAL="$HOME/.m2/repository"
+          CENTRAL='central::::https://repo.maven.apache.org/maven2'
+
+          # Un jar valido empieza con la firma ZIP "PK". Esto detecta tanto los de 0
+          # bytes como los que traen un cuerpo HTML de error (el repo devuelve 404 con
+          # 1792 bytes de HTML, que `-size 0` no encontraria).
+          jars_invalidos() {
+            find "$REPO_LOCAL" -name '*.jar' -print0 2>/dev/null \
+              | while IFS= read -r -d '' j; do
+                  if [ ! -s "$j" ] || [ "$(head -c 2 "$j" 2>/dev/null)" != "PK" ]; then
+                    printf '%s\n' "$j"
+                  fi
+                done
+          }
+
+          # Deriva las coordenadas del layout del repo local:
+          #   <grupo/con/barras>/<artifactId>/<version>/<artifactId>-<version>.jar
+          reparar() {
+            local reparados=0 jar rel dir ver art grp
+            while IFS= read -r jar; do
+              [ -n "$jar" ] || continue
+              rel="${jar#$REPO_LOCAL/}"
+              dir=$(dirname "$rel")
+              ver=$(basename "$dir")
+              art=$(basename "$(dirname "$dir")")
+              grp=$(dirname "$(dirname "$dir")" | tr '/' '.')
+              echo "    $grp:$art:$ver" >&2
+              rm -f "$jar"
+              mvn -B -q dependency:get -Dartifact="$grp:$art:$ver" \
+                -DremoteRepositories="$CENTRAL" >&2 || true
+              reparados=$((reparados + 1))
+            done < <(jars_invalidos)
+            echo "$reparados"
+          }
+
+          for intento in 1 2 3; do
+            echo "== intento $intento"
+            if mvn -B clean install -Pproduction -am -pl owlcms \
+                 -Drevision=${{ env.BASE_REVISION }} -Dmaven.test.skip; then
+              echo "Build ok en el intento $intento."
+              exit 0
+            fi
+
+            malos=$(jars_invalidos | wc -l | tr -d ' ')
+            if [ "$malos" -eq 0 ]; then
+              echo "" >&2
+              echo "El build fallo y no hay jars invalidos en el repo local." >&2
+              echo "La causa es otra: revisar los [ERROR] de Maven de arriba." >&2
+              exit 1
+            fi
+
+            echo "  $malos jar(s) invalidos; recuperandolos de central:"
+            n=$(reparar)
+            echo "  reparados: $n"
+          done
+
+          echo "El build siguio fallando despues de 3 intentos." >&2
+          exit 1
 
       - name: Rename the zip
         run: |
