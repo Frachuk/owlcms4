@@ -1,0 +1,53 @@
+name: Test
+
+# Job reutilizable: corre los cuatro gates del tema `modern`.
+# No se dispara solo, lo llaman ci.yml (en PRs) y cd.yml (en push).
+#
+# Los gates son Python puro de la stdlib (argparse, json, pathlib, re, subprocess,
+# sys), asi que no hay nada que instalar mas alla del interprete.
+# Documentacion de cada uno: tools/theme-check/README.md
+
+on:
+  workflow_call:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+
+      # Estructura: cada hoja del fork tiene que parsear con la misma cantidad de
+      # bloques que su base de fabrica, sin comentarios sin cerrar ni `*/` huerfanos.
+      # Es el gate que atrapo el peor defecto de todo el trabajo: un marcador de
+      # comentario que cerraba un bloque antes de tiempo y hacia que el parser
+      # descartara una regla entera, con un `git diff` de una sola linea.
+      - name: Parse structure
+        run: python3 tools/theme-check/parse.py
+
+      # Contraste WCAG de la paleta, en los tres temas y en los dos modos.
+      # Toma la ruta del colors.css como argumento, por eso el bucle.
+      - name: WCAG contrast
+        run: |
+          set -euo pipefail
+          for tema in modern modern-public modern-video; do
+            echo "== $tema"
+            python3 tools/theme-check/contrast.py \
+              "shared/src/main/resources/css/$tema/colors.css" --mode both
+          done
+
+      # Tokens usados en var() que no estan definidos en ningun lado.
+      - name: Undefined tokens
+        run: python3 tools/theme-check/tokens.py
+
+      # Drift contra las carpetas de fabrica: avisa si upstream toco un archivo del
+      # que forkeamos, para portar el cambio. Sin --update, que es solo para
+      # registrar un sync nuevo a mano.
+      - name: Drift against factory themes
+        run: python3 tools/theme-check/drift.py
