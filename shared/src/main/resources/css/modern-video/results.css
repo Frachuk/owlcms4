@@ -328,8 +328,22 @@ table.results tr td.club div.clubName div.ellipsis {
    contenido y desbordaba su pista de grid de 0px. Con `column-gap: 0` lo tapaban las
    celdas opacas vecinas; con el column-gap de este tema se asomaba como una marca
    clara al lado de cada vspacer del encabezado. Ver tools/theme-check/README.md. */
+/* modern: el tercer selector alcanza el encabezado de rank por categoria de
+   ResultsMulti.js, que el template emite SIN clase (el texto es el nombre de la
+   categoria, p. ej. "Open"). Con los ranks apagados su pista del grid colapsa, pero
+   sin clase ninguna regla del tema lo podia ocultar: quedaba una caja de 6.6px con
+   2px de contenido y el texto de 38px centrado y recortado, asomandose por el
+   column-gap al final del grupo de Snatch.
+   `th.best +` lo distingue de los otros th sin clase de esa fila, y `:not([style])`
+   descarta los encabezados de grupo (Snatch / Clean&Jerk / Total), que son sin clase
+   pero llevan un `grid-column: span` inline. Medido en multiRanks: matchea exactamente
+   1 elemento. En los tableros de una sola categoria no matchea nada, porque ahi
+   despues de `th.best` viene `th.rank`, que si tiene clase.
+   Ojo: si algun dia `--nbRanks` es mayor a 1 y el template emite varios sin clase
+   seguidos, este selector solo alcanza al primero. Ver tools/theme-check/README.md. */
 :host table.results tr td.rank,
-:host table.results tr th.rank {
+:host table.results tr th.rank,
+:host table.results tr.head th.best + th:not([class]):not([style]) {
     background-color: var(--RankBackgroundColor);
     color: var(--RankTextColor);
     visibility: var(--rankVisibility);
@@ -353,8 +367,22 @@ table.results tr td.club div.clubName div.ellipsis {
 }
 
 /* total rank */
+/* modern: el tercer selector corrige un desajuste del template de ResultsMulti.js.
+   En el subencabezado de ese tablero, la columna del rank TOTAL lleva `class="rank"`
+   en el `th` pero `class="totalRank"` en el `td`. Con `noranks` + `totalRank` (ranks
+   por levantamiento apagados, total encendido) las dos mitades de la misma columna
+   siguen switches distintos: el `td` queda visible con su dato y el `th` se oculta,
+   dejando una columna con datos y sin rotulo.
+   `:has(+ .sinclairVspacer)` lo identifica: ese spacer extra existe SOLO en el
+   encabezado de ResultsMulti.js (lo dice el comentario de resultsMulti.css), y el
+   `th.rank` del grupo Total es el unico que lo tiene como hermano siguiente. Medido:
+   alcanza 1 elemento en multiRanks y 0 en los tableros de una sola categoria, donde
+   `.sinclairVspacer` no existe y el `th.totalRank` ya esta bien etiquetado.
+   El arreglo de fondo es corregir la clase en el template; candidato a PR upstream.
+   Ver tools/theme-check/README.md. */
 :host table.results tr td.totalRank,
-:host table.results tr th.totalRank {
+:host table.results tr th.totalRank,
+:host table.results tr.head th.rank:has(+ .sinclairVspacer) {
     background-color: var(--TotalRankBackgroundColor);
     color: var(--TotalRankTextColor);
     visibility: var(--totalRankVisibility);

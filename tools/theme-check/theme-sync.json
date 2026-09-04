@@ -32,7 +32,7 @@
       },
       "results.css": {
         "base_sha": "f3ef255878791222aceeb8a95987d2ef7d7a38f9",
-        "fork_sha": "814ea77e9d4720a525331b32d3d08bce01e81590"
+        "fork_sha": "4c69c9a5409c0012ef906509ab58ff6a817a45f2"
       },
       "resultsCustomization.css": {
         "base_sha": "92dfce5aa436b59aaf6031e31100745c33f0ac25",
@@ -48,7 +48,7 @@
       },
       "resultsMultiCustomization.css": {
         "base_sha": "3b255aaef8de85d85be2a84917d586379da9b6dd",
-        "fork_sha": "3b255aaef8de85d85be2a84917d586379da9b6dd"
+        "fork_sha": "de74edca040a50ff5156bffe5edf590d76dc56b9"
       },
       "startListCustomization.css": {
         "base_sha": "017b3425af513d545738dadc1c8e409760339aea",
@@ -97,7 +97,7 @@
       },
       "results.css": {
         "base_sha": "82c8f7b6baaf8cab2e56ece9025082c5d00a0fcb",
-        "fork_sha": "9defa4d9d7b51e909dd1e40553ff62f3b76db090"
+        "fork_sha": "492648a019db95f0913507b107cf781060f3081e"
       },
       "resultsCustomization.css": {
         "base_sha": "a811fad86b82a6689dcdfe592da67defa6716226",
@@ -117,7 +117,7 @@
       },
       "resultsMultiCustomization.css": {
         "base_sha": "d2d8ba59d2d54dddd815f4035f9cbace4b443a34",
-        "fork_sha": "d2d8ba59d2d54dddd815f4035f9cbace4b443a34"
+        "fork_sha": "1615224c979b2e71b761bc2a80addc2ff2c9addd"
       },
       "startListCustomization.css": {
         "base_sha": "017b3425af513d545738dadc1c8e409760339aea",
@@ -166,7 +166,7 @@
       },
       "results.css": {
         "base_sha": "26d62511b05a6a2f2869aec5ec7a858eabec15db",
-        "fork_sha": "a11c2f88e7293ce0e730eb38d66cf8cb8604e1a8"
+        "fork_sha": "a45bce3a7d1467da4faefcd02483de6ae8d159c7"
       },
       "resultsCustomization.css": {
         "base_sha": "fab952c0f86da6094f933317c3631106b8b717f0",
@@ -182,7 +182,7 @@
       },
       "resultsMultiCustomization.css": {
         "base_sha": "6a90d2e750f63c5070023b4714b239a1c7ee76f0",
-        "fork_sha": "6a90d2e750f63c5070023b4714b239a1c7ee76f0"
+        "fork_sha": "98a00789ebf4201357170388a6cf5da9f0e745fd"
       },
       "startListCustomization.css": {
         "base_sha": "017b3425af513d545738dadc1c8e409760339aea",

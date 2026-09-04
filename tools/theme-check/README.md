@@ -177,6 +177,23 @@ Y las dos invariantes que hay que respetar al resolver:
   Si la línea a tokenizar está comentada, la tokenización es inerte: dejala verbatim.
   (`parse.py` atrapa esto, pero mejor no llegar ahí.)
 
+### Ojo al editar `results.css` y mirar los tableros multi
+
+`resultsMulti.css` hace `@import url('results.css')` **sin versión**. Los `<link>` que
+inyecta `stylesheetHref` llevan `?v=<timestamp>`, pero ese `@import` no, así que al
+editar `results.css` los tableros `multiRanks`/`publicMultiRanks` siguen viendo la
+copia cacheada por más que se recargue con un query nuevo. Se nota porque la regla
+nueva no aparece en el CSSOM aunque el archivo servido sí la tenga.
+
+Para forzarlo desde la consola del tablero, antes de recargar:
+
+```js
+await fetch('local/css/modern/results.css', { cache: 'reload' });
+```
+
+O un hard reload del navegador. No es un problema del tema: pasa igual con las
+carpetas de fábrica.
+
 ### 4. Verificar
 
 ```bash
@@ -232,12 +249,12 @@ conflictos de port son pocos. Concretamente, sobre los 49 archivos de los tres t
 | `jurydecisions.css` | 1 línea | 1 línea | 1 línea |
 | `ncurrentathlete.css` | archivo nuevo | archivo nuevo | archivo nuevo |
 | `publicresultsCustomization.css` | idéntico | idéntico | idéntico |
-| `results.css` | 6 líneas tokenizadas + 6 declaraciones | 8 tokenizadas + 8 declaraciones + 5 selectores | 8 tokenizadas + 8 declaraciones + 5 selectores |
+| `results.css` | 6 tokenizadas + 6 declaraciones + 2 selectores | 8 tokenizadas + 8 declaraciones + 7 selectores | 8 tokenizadas + 8 declaraciones + 7 selectores |
 | `resultsCustomization.css` | 2 declaraciones quitadas + 1 selector | 2 declaraciones quitadas + 1 selector | 2 declaraciones quitadas + 1 selector |
 | `resultsDecisionSection.css` | (no existe en esta familia) | idéntico | (no existe; ver `@import` abajo) |
 | `resultsMedalsCustomization.css` | idéntico | 1 línea | 1 línea |
 | `resultsMulti.css` | idéntico | idéntico | 1 `@import` |
-| `resultsMultiCustomization.css` | idéntico | idéntico | idéntico |
+| `resultsMultiCustomization.css` | 2 declaraciones quitadas + 1 selector | 2 declaraciones quitadas + 1 selector | 2 declaraciones quitadas + 1 selector |
 | `startListCustomization.css` | 1 línea | 1 línea | 1 línea |
 | `top.css` | 1 línea | 1 línea | 1 línea |
 | `topSinclair.css` | 1 línea | 1 línea | 1 línea |
@@ -407,14 +424,68 @@ acá para que nadie los persiga como si fueran nuestros.
   que medirla en ese tablero antes de tocarla. El mismo defecto afecta a
   `--totalRankWidth`/`--totalRankVisibility`; hoy no se manifiesta porque los tableros
   en uso no apagan el rank total.
+  **Corregido también en `resultsMultiCustomization.css`** (tablero `multiRanks`), donde
+  el bloque `*` declaraba `3ch` contra el `3em` de `table.results.ranks`. Se midió antes
+  de tocarlo: `3ch` = 27.6px y `3em` = 46.4px, así que con los ranks encendidos la pista
+  manda y el `min-width` de la celda nunca era vinculante — quitarlo del `*` es neutro y
+  además alinea el `min-width` con la pista. En `modern-public`/`modern-video` el bloque
+  `*` ya decía `3em`, el mismo valor de la tabla, así que ahí es trivialmente neutro.
+  **Sin corregir**, a propósito, en `resultsMedalsCustomization.css` y
+  `startListCustomization.css`: esos dos **no** definen `--rankWidth` a nivel de tabla,
+  solo lo consumen en `grid-template-columns`, así que quitarlo del `*` dejaría el token
+  indefinido y rompería la grilla. Ahí tampoco hay defecto: celda y pista salen del mismo
+  valor, así que no desbordan.
+- Los encabezados de rank por categoría de `ResultsMulti.js` se emiten **sin clase**
+  (el texto es el nombre de la categoría, p. ej. "Open"). Con los ranks apagados su
+  pista del grid colapsa, pero al no tener clase ninguna regla de fábrica los oculta:
+  medido en `multiRanks`, caja de 6.6px con 2.32px de padding por lado — 2px de
+  contenido — con el texto de 38.1px centrado y `overflow: hidden`, o sea una tajada de
+  2px asomándose por el `column-gap`. **Corregido en los tres temas** con un tercer
+  selector en la regla de rank de `results.css`:
+  `:host table.results tr.head th.best + th:not([class]):not([style])`. `th.best +` lo
+  distingue de los otros `th` sin clase de esa fila y `:not([style])` descarta los
+  encabezados de grupo (Snatch / Clean&Jerk / Total), que son sin clase pero llevan un
+  `grid-column: span` inline. Medido: matchea exactamente 1 elemento en `multiRanks` y
+  **0** en los tableros de una sola categoría, donde después de `th.best` viene
+  `th.rank`, que sí tiene clase. Darle una clase en el template sigue siendo el arreglo
+  de fondo y es candidato a PR upstream; mientras tanto el selector alcanza.
+  Limitación conocida: si `--nbRanks` fuera mayor a 1 y el template emitiera varios sin
+  clase seguidos, el selector solo alcanza al primero.
+- En el subencabezado de `ResultsMulti.js`, la columna del rank **total** lleva
+  `class="rank"` en el `th` pero `class="totalRank"` en el `td`. Con `noranks` +
+  `totalRank` — ranks por levantamiento apagados, total encendido, que es la
+  configuración habitual — las dos mitades de la misma columna siguen switches
+  distintos: el `td` queda visible con su dato y el `th` se oculta, dejando una columna
+  con datos y **sin rótulo**. **Corregido en los tres temas** agregando
+  `:host table.results tr.head th.rank:has(+ .sinclairVspacer)` a la regla de
+  `totalRank` en `results.css`. Ese spacer extra existe solo en el encabezado de
+  `ResultsMulti.js` (lo dice el comentario de cabecera de `resultsMulti.css`), y el
+  `th.rank` del grupo Total es el único que lo tiene como hermano siguiente. Medido:
+  alcanza 1 elemento en `multiRanks` y **0** en los tableros de una sola categoría,
+  donde `.sinclairVspacer` no existe y el `th.totalRank` ya está bien etiquetado
+  ("Ubic.", visible). Corregir la clase en el template es el arreglo de fondo;
+  candidato a PR upstream.
 - El slot de la bandera del equipo se reserva aunque no haya bandera. `td.flags
   div.flags` fija `flex-basis` y `width` sin condicionar a que exista la imagen, así
   que un tablero sin banderas muestra 48.2px de hueco muerto en cada celda de equipo.
   En `resultsCustomization.css` está corregido en los tres temas (ver el mapa de
   deltas); sigue igual que en fábrica en `startListCustomization.css`,
-  `resultsMedalsCustomization.css`, `resultsMultiCustomization.css` y
-  `publicresultsCustomization.css` — el de medals tiene un juego de reglas distinto y
-  cada uno hay que medirlo en su propio tablero antes de tocarlo.
+  `resultsMedalsCustomization.css` y `publicresultsCustomization.css`. En
+  `resultsMultiCustomization.css` **ya está corregido en los tres temas**, pero con dos
+  selectores distintos, y esta es una trampa al portar: la variante de `nogrid` usa
+  `td.flags div.flags`, mientras que las de `public`/`transparent` usan el más amplio
+  **`td.flags div`** — cualquier div dentro de la celda. Como el `td` lleva las clases
+  `club flags`, ese selector le aplica el ancho fijo del slot **también al
+  `div.ellipsis` del nombre del equipo**, que además de correr el texto lo **trunca**
+  (medido en `multiRanks` con `modern-video`: hueco de 55.3px, márgenes 85 contra 29.7,
+  y "NORTH" recortado a "NORT"). Buscar `td.flags div.flags` no encuentra esa variante;
+  hay que buscar `td.flags div`. Corregido condicionándolo igual, con
+  `table.results:has(td.club.flags img)`. Verificado en `multiRanks?video=true`
+  (`modern-video`: 50.5/50.5, slot 0 sin banderas y 55.3 con una, transparencia del
+  `.wrapper` intacta) y en `publicMultiRanks` (`modern-public`: 4.8/4.8, slot 0). `startListCustomization.css` no
+  necesita arreglo: su `td.flags div.flags` no declara `width` ni `flex`, así que no
+  reserva nada. El de medals tiene un juego de reglas distinto y su tabla es
+  `table.results.medals`; hay que medirlo con medallas cargadas antes de tocarlo.
 - En `public` y `transparent`, la regla de rank es solo `td.rank` y sin `min-width`, así
   que la clase `noranks` **no** oculta el `th` del encabezado: queda visible y sin piso
   de ancho, desbordando su pista de 0px. En `nogrid` la misma regla sí cubre `th.rank`.

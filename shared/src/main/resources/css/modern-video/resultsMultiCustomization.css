@@ -35,8 +35,16 @@
     --custom2Width: 0;
     --custom2Visibility: hidden;
 
-    --rankWidth: 3em;
-    --rankVisibility: visible;
+    /* modern: --rankWidth y --rankVisibility NO se declaran aca, a proposito.
+       El selector de este bloque es `*`, que matchea cada th/td directamente, y una
+       declaracion propia siempre gana sobre un valor heredado. Con ellas aca, las
+       celdas .rank nunca veian el 0/hidden que la tabla toma de
+       `table.results.noranks`: la pista del grid colapsaba a 0px pero la celda seguia
+       visible y con ancho, y desbordaba, asomandose por el column-gap del tema como
+       una marca clara al lado de cada vspacer. Mismo defecto y mismo arreglo que en
+       resultsCustomization.css. Aca el valor del bloque `*` es identico al de
+       `table.results.ranks` (3em), asi que quitarlo no cambia nada con los ranks
+       encendidos. Ver tools/theme-check/README.md. */
     --totalRankWidth: 3em;
     --totalRankVisibility: visible;
 
@@ -183,7 +191,16 @@ td.flags div img {
     border: 1px;
     border-style: solid;
 }
-td.flags div {
+/* modern: el slot de la bandera se reserva SOLO si el tablero tiene alguna bandera
+   cargada. Ojo al portar: aca el selector de fabrica es `td.flags div` (cualquier div),
+   no `td.flags div.flags` como en la variante de nogrid. Como el `td` lleva las clases
+   `club flags`, esa regla le aplica el ancho fijo del slot TAMBIEN al `div.ellipsis`
+   del nombre del equipo. Sin banderas quedaba un hueco muerto de 55.3px a la izquierda
+   del nombre: la celda esta centrada, pero centra "slot vacio + nombre", y el texto se
+   iba a la derecha (medido: 85px de margen izquierdo contra 29.7px del derecho).
+   Mismo patron que en resultsCustomization.css. `:empty` no sirve: el div trae un
+   espacio. Ver tools/theme-check/README.md. */
+table.results:has(td.club.flags img) td.flags div {
     flex: 0 0 calc(var(--flagHeight)*1.3 + 2vh);
     width: calc(var(--flagHeight)*1.3 + 2vh);
     height: calc(var(--flagHeight));
